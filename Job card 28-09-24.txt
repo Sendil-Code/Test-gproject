@@ -1,0 +1,54 @@
+frappe.ui.form.on("Job Card", {
+	btn_cutting_chart:function(frm){	
+        cur_frm.refresh_field("job_panel_item");
+	var itemCons = frm.doc.items[0].consumption;
+	var accRate = frm.doc.items[0].accessories_rate;
+	let cutOperationCost;
+	let vRate= accRate * itemCons;
+	frappe.model.with_doc("BOM", frm.doc.bom_no, function() {
+		var tabletransfer = frappe.model.get_doc("BOM", frm.doc.bom_no);
+		var opLength = tabletransfer.operations.length;
+		var cutCost = tabletransfer.operations;
+		for(var i=0; i<opLength; i++){
+			if(cutCost[i].operation == "CUTTING"){
+				cutOperationCost = cutCost[i].operating_cost;
+			}
+		}
+		if (frm.doc.job_panel_item.length<=0){		
+		$.each(tabletransfer.items, function(index, row){		
+		if(frm.doc.job_panel_item){
+		  if(row.item_category == "PANEL"){	
+		    var d = frm.add_child("job_panel_item");			   
+		    d.item_code = row.item_code;
+		    d.item_name = row.item_name;
+		    d.no_of_bit = row.qty;
+		    d.require_qty = frm.doc.for_quantity * row.qty ;
+		    d.panel_width = row.panel_width;
+		    d.panel_length = row.panel_length;		    	
+		    d.parameter = row.parameter;
+		    d.no_of_bit = row.no_of_bit;
+		    d.valuation_rate = vRate + cutOperationCost;
+		    d.measurement = row.measurement;
+		   if(d.measurement == "CENTIMETER"){
+			frappe.model.set_value(d.doctype, d.name, "cut_width_in_cm", d.panel_width);
+			frappe.model.set_value(d.doctype, d.name, "cut_length_in_cm", d.panel_length);
+			var divwid = d.panel_width/ 2.54;
+			var divlen = d.panel_length/ 2.54;
+			frappe.model.set_value(d.doctype, d.name, "cut_width_in_inches", divwid );
+			frappe.model.set_value(d.doctype, d.name, "cut_length_in_inches", divlen );
+		   }if(d.measurement == "INCHES"){
+		   	frappe.model.set_value(d.doctype, d.name, "cut_width_in_inches", d.panel_width );
+			frappe.model.set_value(d.doctype, d.name, "cut_length_in_inches", d.panel_length);
+			var divwid = d.panel_width * 2.54;
+			var divlen = d.panel_length * 2.54;
+			frappe.model.set_value(d.doctype, d.name, "cut_width_in_cm", divwid);
+			frappe.model.set_value(d.doctype, d.name, "cut_length_in_cm", divlen);
+		   }
+		   } 	
+		   }
+		   });		 
+		   cur_frm.refresh_field("job_panel_item");
+                }
+	    });
+	}     
+});
